@@ -67,7 +67,6 @@ def initialize_cards():
     display_data('in', in_card, 'IN')
     display_data('out', out_card, 'OUT')
     display_data('use', use_card, 'IN USE')
-
 # Function to confirm deletion
 def on_press_delete(row_id, column):
     with sqlite3.connect('database.db') as connect:
@@ -95,7 +94,7 @@ with ui.row():
 with ui.row().classes('w-full'):
     ui.label('TYPE').classes('text-h6')
     ui.space()
-    selecte = ui.select(choix, value=choix[0], with_input=True)
+    selecte = ui.select(choix, value=choix[0], with_input=True).props('rounded outlined ')
     ui.button('OK', on_click=on_press_ok)
 
 with ui.row().classes('w-full'):
