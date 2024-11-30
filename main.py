@@ -1,39 +1,40 @@
 from nicegui import ui
 import sqlite3
+from functools import partial
+from datetime import datetime
 
 # Define choices
-choix = ['hh', 'jj', 'gg']
+choix = ['in', 'out', 'use']
 
 # Initialize the database
 def initialize_database():
-    connect = sqlite3.connect('database.db')
-    cursor = connect.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS my_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            hh TEXT,
-            jj TEXT,
-            gg TEXT
-        )
-    ''')
-    connect.commit()
-    connect.close()
+    with sqlite3.connect('database.db') as connect:
+        cursor = connect.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS my_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                "in" TEXT,
+                "out" TEXT,
+                "use" TEXT,
+                timestamp TEXT
+            )
+        ''')
+        connect.commit()
 
 # Create database and insert data
 def create_database(column, value):
-    connect = sqlite3.connect('database.db')
-    cursor = connect.cursor()
-    cursor.execute(f"INSERT INTO my_data ({column}) VALUES (?)", (value,))
-    connect.commit()
-    connect.close()
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')  # Current timestamp
+    with sqlite3.connect('database.db') as connect:
+        cursor = connect.cursor()
+        cursor.execute(f'INSERT INTO my_data ("{column}", timestamp) VALUES (?, ?)', (value, timestamp))
+        connect.commit()
 
 # Display data from the database
 def display_data(column, card, card_label):
-    connect = sqlite3.connect('database.db')
-    cursor = connect.cursor()
-    cursor.execute(f"SELECT {column} FROM my_data WHERE {column} IS NOT NULL")
-    rows = cursor.fetchall()
-    connect.close()
+    with sqlite3.connect('database.db') as connect:
+        cursor = connect.cursor()
+        cursor.execute(f'SELECT id, "{column}", timestamp FROM my_data WHERE "{column}" IS NOT NULL')
+        rows = cursor.fetchall()
 
     # Clear existing content in the card
     card.clear()
@@ -41,32 +42,46 @@ def display_data(column, card, card_label):
     # Add labels for each row dynamically
     with card:
         ui.label(card_label).classes('text-red')  # Add card title
-        for row in rows:
-            with ui.row():
-                ui.label(row[0])
-                ui.button('clear',on_click=on_press_delete)
+        for row_id, row_value, row_time in rows:
+            with ui.row().classes('w-full'):
+                ui.label(f'{row_value}')
+                ui.space() 
+                ui.label(f'{row_time}').classes('text-green')
+                ui.space()  # Display reference and timestamp
+                ui.button('Clear', on_click=partial(on_press_delete, row_id=row_id, column=column))
 
 # Function to handle the "OK" button press
 def on_press_ok():
     if ref.value.strip():  # Ensure input is not empty
         create_database(selecte.value, ref.value)
-        if selecte.value == 'hh':
-            display_data('hh', in_card, 'IN')
-        elif selecte.value == 'jj':
-            display_data('jj', out_card, 'OUT')
-        elif selecte.value == 'gg':
-            display_data('gg', use_card, 'IN USE')
+        if selecte.value == 'in':
+            display_data('in', in_card, 'IN')
+        elif selecte.value == 'out':
+            display_data('out', out_card, 'OUT')
+        elif selecte.value == 'use':
+            display_data('use', use_card, 'IN USE')
+        ref.value = ""  # Clear the input field
 
 # Initialize cards with labels
 def initialize_cards():
-    display_data('hh', in_card, 'IN')
-    display_data('jj', out_card, 'OUT')
-    display_data('gg', use_card, 'IN USE')
-###fonction for dealet 
+    display_data('in', in_card, 'IN')
+    display_data('out', out_card, 'OUT')
+    display_data('use', use_card, 'IN USE')
 
-def on_press_delete():
-    print('deleat')
-    
+# Function to confirm deletion
+def on_press_delete(row_id, column):
+    with sqlite3.connect('database.db') as connect:
+        cursor = connect.cursor()
+        cursor.execute("DELETE FROM my_data WHERE id = ?", (row_id,))
+        connect.commit()
+    # Refresh the UI for the relevant column
+    if column == 'in':
+        display_data('in', in_card, 'IN')
+    elif column == 'out':
+        display_data('out', out_card, 'OUT')
+    elif column == 'use':
+        display_data('use', use_card, 'IN USE')
+
 # UI
 with ui.header():
     ui.space()
