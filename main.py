@@ -1,11 +1,11 @@
-from nicegui import ui
+from nicegui import ui,app
 import sqlite3
 from functools import partial
 from datetime import datetime
 
 # Define choices
 choix = ['in', 'out', 'use']
-
+icon = 'data:$.png'
 # Initialize the database
 def initialize_database():
     with sqlite3.connect('database.db') as connect:
@@ -47,7 +47,7 @@ def display_data(column, card, card_label):
                 ui.label(f'{row_value}')
                 ui.space() 
                 ui.label(f'{row_time}').classes('text-green')
-                ui.space()  # Display reference and timestamp
+                ui.space() 
                 ui.button('Clear', on_click=partial(on_press_delete, row_id=row_id, column=column))
 
 # Function to handle the "OK" button press
@@ -80,37 +80,44 @@ def on_press_delete(row_id, column):
         display_data('out', out_card, 'OUT')
     elif column == 'use':
         display_data('use', use_card, 'IN USE')
-
+##### and sheft emploi
+def handle_click():
+    ui.timer(1.0, lambda: ui.notify('end sheft emploi Tanx for your job'), once=True)
 # UI
 with ui.header():
     ui.space()
     ui.label('IIM APP').classes('text-h4')
     ui.space()
 
-with ui.row():
-    ui.label('Enter Reference')
+with ui.row().classes('w-full'):
+    ui.label('Enter Reference').classes('text-h6')
     ref = ui.input('Enter your reference').props('rounded outlined dense')
-
+    ui.space()
+    with ui.card():
+        label = ui.label()
+        ui.timer(1.0, lambda: label.set_text(f'{datetime.now():%X}')) .classes('text-h6')
+    ui.button('Notify after 1h', on_click=handle_click).classes('heigh:150px')
 with ui.row().classes('w-full'):
     ui.label('TYPE').classes('text-h6')
-    ui.space()
     selecte = ui.select(choix, value=choix[0], with_input=True).props('rounded outlined ')
-    ui.button('OK', on_click=on_press_ok)
+    ui.button('SAVE', on_click=on_press_ok)
 
 with ui.row().classes('w-full'):
     in_card = ui.card().style("width:32%;height:full;align-items:center")
     with in_card:
         ui.label('IN').classes('text-red')
+        ui.separator()
 
     out_card = ui.card().style("width:32%;height:full;align-items:center")
     with out_card:
         ui.label('OUT').classes('text-red')
-
+        ui.separator()
     use_card = ui.card().style("width:32%;height:full;align-items:center")
     with use_card:
         ui.label('IN USE').classes('text-red')
-
+        ui.separator()
+ui.link('My gethub','https://github.com/Salimi-Walid')
 # Initialize database and cards
 initialize_database()
 initialize_cards()
-ui.run()
+ui.run(native=True,window_size=[1500,500],title='walid app',favicon='🚀')
